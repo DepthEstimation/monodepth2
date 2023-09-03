@@ -1,11 +1,14 @@
 import os
 import cv2
+import time
 
 folder_path = "assets/test_videos"  # Update this with the actual path
 model = "mono_1024x320"
 
 # List all files in the folder
 file_list = os.listdir(folder_path)
+total_file = len(file_list)
+total_time = 0
 
 # Iterate through the files and execute shell commands
 for file_name in file_list:
@@ -25,15 +28,18 @@ for file_name in file_list:
         
         # Command 2
         command2 = f"python test_simple.py --image_path assets/{model}/test_frames/{base_name} --out assets/{model}/test_out/{base_name} --model_name {model}"
+        start = time.time()
         os.system(command2)
+        end = time.time()
+        total_time += end - start
         
         # Command 3
         command3 = f"ffmpeg -framerate 30 -pattern_type glob -i 'assets/{model}/test_out/{base_name}/*.jpeg' -c:v h264_nvenc -pix_fmt yuv420p assets/{model}/test_results/{base_name}.mp4"
         os.system(command3)
 
-	# Command 4
+	    # Command 4
 
-	# 입력 영상 파일 경로
+	    # 입력 영상 파일 경로
         input_file1 = f'assets/test_videos/{file_name}'			# original
         input_file2 = f'assets/{model}/test_results/{base_name}.mp4'	# output of monodepth2
 
