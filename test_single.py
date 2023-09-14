@@ -7,20 +7,24 @@ model = "mono_1024x320"
 total_time = 0
 
 # Iterate through the files and execute shell commands
-file_name = "lab.mp4"
+file_name = "lozan.mp4"
 if os.path.isfile(os.path.join(folder_path, file_name)):
 
     base_name = os.path.splitext(file_name)[0]
 
-    # create folders
-    command0 = f"mkdir -p assets/{model}/test_frames/{base_name} && mkdir -p assets/{model}/test_out/{base_name} && mkdir -p assets/{model}/test_results && mkdir -p assets/{model}/test_concatenated"
-    os.system(command0)
-    print("done!")
+    # output 파일 저장 경로
+    output_file = f'assets/{model}/test_concatenated/output_concatenated_{base_name}.mp4'
 
-    # Command 1
-    # must be "jpg" NOT "jpeg"
-    command1 = f"ffmpeg -i assets/test_videos/{file_name} assets/{model}/test_frames/{base_name}/%04d.jpg"
-    os.system(command1)
+    if not os.path.isfile(output_file):
+        # create folders
+        command0 = f"mkdir -p assets/{model}/test_frames/{base_name} && mkdir -p assets/{model}/test_out/{base_name} && mkdir -p assets/{model}/test_results && mkdir -p assets/{model}/test_concatenated"
+        os.system(command0)
+        print("done!")
+
+        # Command 1
+        # must be "jpg" NOT "jpeg"
+        command1 = f"ffmpeg -i assets/test_videos/{file_name} assets/{model}/test_frames/{base_name}/%04d.jpg"
+        os.system(command1)
     
     # Command 2
     command2 = f"python test_simple.py --image_path assets/{model}/test_frames/{base_name} --out assets/{model}/test_out/{base_name} --model_name {model}"
@@ -38,9 +42,6 @@ if os.path.isfile(os.path.join(folder_path, file_name)):
     # 입력 영상 파일 경로
     input_file1 = f'assets/test_videos/{file_name}'			# original
     input_file2 = f'assets/{model}/test_results/{base_name}.mp4'	# output of monodepth2
-
-    # output 파일 저장 경로
-    output_file = f'assets/{model}/test_concatenated/output_concatenated_{base_name}.mp4'
 
     #command4 = f"ffmpeg -i {input_file1} -i {input_file2} -filter_complex vstack=inputs=2 {output_file}"
     command4 = f'ffmpeg -i {input_file1} -i {input_file2} -filter_complex "[0:v][1:v]vstack=inputs=2[v]" -map "[v]" {output_file}'
