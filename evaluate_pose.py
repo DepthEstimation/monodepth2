@@ -52,14 +52,16 @@ def evaluate(opt):
     assert os.path.isdir(opt.load_weights_folder), \
         "Cannot find a folder at {}".format(opt.load_weights_folder)
 
-    assert opt.eval_split == "odom_9" or opt.eval_split == "odom_10" or opt.eval_split == "odom_22", \
-        "eval_split should be either odom_9 or odom_10"
+    # assert opt.eval_split == "odom_9" or opt.eval_split == "odom_10" or opt.eval_split == "odom_22", \
+    #     "eval_split should be either odom_9 or odom_10"
 
     sequence_id = int(opt.eval_split.split("_")[1])
 
     filenames = readlines(
         os.path.join(os.path.dirname(__file__), "splits", "odom",
                      "test_files_{:02d}.txt".format(sequence_id)))
+
+
 
     dataset = KITTIOdomDataset(opt.data_path, filenames, opt.height, opt.width,
                                [0, 1], 4, is_train=False)
