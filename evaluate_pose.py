@@ -55,12 +55,15 @@ def evaluate(opt):
     # assert opt.eval_split == "odom_9" or opt.eval_split == "odom_10" or opt.eval_split == "odom_22", \
     #     "eval_split should be either odom_9 or odom_10"
 
-    sequence_id = int(opt.eval_split.split("_")[1])
+    # sequence_id = int(opt.eval_split.split("_")[1])
+
+    # filenames = readlines(
+    #     os.path.join(os.path.dirname(__file__), "splits", "odom",
+    #                  "test_files_{:02d}.txt".format(sequence_id)))
 
     filenames = readlines(
-        os.path.join(os.path.dirname(__file__), "splits", "odom",
-                     "test_files_{:02d}.txt".format(sequence_id)))
-
+        os.path.join(opt.data_path, "original_video", "splits", "all_{}.txt".format(opt.eval_split))
+    )
 
 
     dataset = KITTIOdomDataset(opt.data_path, filenames, opt.height, opt.width,
@@ -126,7 +129,7 @@ def evaluate(opt):
 
     # print("\n   Trajectory error: {:0.3f}, std: {:0.3f}\n".format(np.mean(ates), np.std(ates)))
 
-    save_path = os.path.join(opt.load_weights_folder, "poses.npy")
+    save_path = os.path.join(opt.data_path, os.path.split(opt.load_weights_folder)[-1], f"{opt.eval_split}.npy")
     np.save(save_path, pred_poses)
     print("-> Predictions saved to", save_path)
 

@@ -76,7 +76,7 @@ for file_name in file_list:
 
 
         # Command 5
-        
+        command5 = f"python evaluate_pose.py --eval_split "
 
 
         # 영상 정보와 depth로 변환하는데 걸린 시간을 depth path에 txt파일 형식으로 저장한다
