@@ -166,12 +166,38 @@ def test_simple(args):
             name_dest_im = os.path.join(output_directory, "{}_disp.jpeg".format(output_name))
             im.save(name_dest_im)
 
-            print("   Processed {:d} of {:d} images - saved predictions to:".format(
-                idx + 1, len(paths)))
-            print("   - {}".format(name_dest_im))
-            print("   - {}".format(name_dest_npy))
+            # print("   Processed {:d} of {:d} images - saved predictions to:".format(
+            #     idx + 1, len(paths)))
+            # print("   - {}".format(name_dest_im))
+            # print("   - {}".format(name_dest_npy))
+
+            printProgressBar(idx, len(paths), prefix = 'Progress:', suffix = f'Complete ({idx}/{len(paths)})', length = 50)
 
     print('-> Done!')
+
+
+
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
+
 
 
 if __name__ == '__main__':
