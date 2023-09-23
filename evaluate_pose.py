@@ -16,6 +16,7 @@ from layers import transformation_from_parameters
 from utils import readlines
 from options import MonodepthOptions
 from datasets import KITTIOdomDataset
+from datasets import EunDataset
 import networks
 
 
@@ -62,11 +63,11 @@ def evaluate(opt):
     #                  "test_files_{:02d}.txt".format(sequence_id)))
 
     filenames = readlines(
-        os.path.join(opt.data_path, "original_video", "splits", "all_{}.txt".format(opt.eval_split))
+        os.path.join(opt.data_path, "splits", "odom_test_{}.txt".format(opt.eval_split))
     )
 
 
-    dataset = KITTIOdomDataset(opt.data_path, filenames, opt.height, opt.width,
+    dataset = EunDataset(opt.data_path, filenames, opt.height, opt.width,
                                [0, 1], 4, is_train=False)
     dataloader = DataLoader(dataset, opt.batch_size, shuffle=False,
                             num_workers=opt.num_workers, pin_memory=True, drop_last=False)

@@ -40,8 +40,8 @@ class EunDataset(MonoDataset):
         f_str = "{:010d}{}".format(frame_index, self.img_ext)
         image_path = os.path.join(
             # 폴더 경로 == <data_path>/<folder>/images/{:010d}.jpg
-            # ex) ./camera_eun/images/lozan/00000000001.jpg
-            self.data_path, "images", folder, f_str)
+            # ex) ./camera_eun/frames/lozan/00000000001.jpg
+            self.data_path, "frames", folder, f_str)
         return image_path
     
     def check_depth(self):

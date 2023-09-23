@@ -175,8 +175,6 @@ def test_simple(args):
 
     print('-> Done!')
 
-
-
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
     Call in a loop to create terminal progress bar
@@ -197,8 +195,6 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     # Print New Line on Complete
     if iteration == total: 
         print()
-
-
 
 if __name__ == '__main__':
     args = parse_args()
