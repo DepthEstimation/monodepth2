@@ -2,7 +2,8 @@ import os
 import cv2
 import time
 
-folder_path = "assets/original_video"  # Update this with the actual path
+assets_path = "assets"
+folder_path = f"{assets_path}/original_video"  # Update this with the actual path
 model = "mono_1024x320"
 
 # paths
@@ -11,7 +12,7 @@ frames_path = f"assets/{model}/frames"
 depth_path = f"assets/{model}/depth"
 depth_video_path = f"assets/{model}/depth_video"
 comparison_video_path = f"assets/{model}/comparison_video"
-trajectory_path = f"assets/{model}/trajectory"
+pose_path = f"assets/{model}/pose"
 
 
 # List all files in the folder
@@ -39,7 +40,8 @@ for file_name in file_list:
         command0 = f"mkdir -p {frames_path}/{base_name} && \
                         mkdir -p {depth_path}/{base_name} && \
                         mkdir -p {depth_video_path} && \
-                        mkdir -p {comparison_video_path}"
+                        mkdir -p {comparison_video_path} && \
+                        mkdir -p {pose_path}"
         os.system(command0)
 
 
@@ -68,17 +70,20 @@ for file_name in file_list:
         input_file1 = f'{original_vieo_path}/{file_name}'			# original
         input_file2 = f'{depth_video_path}/{base_name}.mp4'	        # output of monodepth2
 
+        print("concatenating 2 videos...")
         #command4 = f"ffmpeg -i {input_file1} -i {input_file2} -filter_complex vstack=inputs=2 {output_file}"
         command4 = f'ffmpeg -i {input_file1} -i {input_file2} -filter_complex "[0:v][1:v]vstack=inputs=2[v]" -map "[v]" {output_file}'
-
         # 가로 스택이 보기 더 편한 것 같다
         os.system(command4)
 
+        print("evaluation pose...")
+        # Command 5 & 6
+        command5 = f"python evaluate_pose.py --eval_split {base_name} --load_weights_folder ./models/{model} --data_path {assets_path}"
+        os.system(command5)
+        command6 = f"python convert-np-pose-to-traj-txt.py --file_path {pose_path}/{base_name}.npy"
+        os.system(command6)
 
-        # Command 5
-        command5 = f"python evaluate_pose.py --eval_split "
-
-
+        print("storing video information...")
         # 영상 정보와 depth로 변환하는데 걸린 시간을 depth path에 txt파일 형식으로 저장한다
         cap = cv2.VideoCapture(f"{original_vieo_path}/{file_name}")
  
