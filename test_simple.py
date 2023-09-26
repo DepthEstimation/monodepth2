@@ -34,16 +34,17 @@ def parse_args():
                         help='path to save output images')
     parser.add_argument('--model_name', type=str,
                         help='name of a pretrained model to use',
-                        choices=[
-                            "mono_640x192",
-                            "stereo_640x192",
-                            "mono+stereo_640x192",
-                            "mono_no_pt_640x192",
-                            "stereo_no_pt_640x192",
-                            "mono+stereo_no_pt_640x192",
-                            "mono_1024x320",
-                            "stereo_1024x320",
-                            "mono+stereo_1024x320"])
+                        # choices=[
+                        #     "mono_640x192",
+                        #     "stereo_640x192",
+                        #     "mono+stereo_640x192",
+                        #     "mono_no_pt_640x192",
+                        #     "stereo_no_pt_640x192",
+                        #     "mono+stereo_no_pt_640x192",
+                        #     "mono_1024x320",
+                        #     "stereo_1024x320",
+                        #     "mono+stereo_1024x320"])
+                        )
     parser.add_argument('--ext', type=str,
                         help='image extension to search for in folder', default="jpg")
     parser.add_argument("--no_cuda",
@@ -171,7 +172,7 @@ def test_simple(args):
             # print("   - {}".format(name_dest_im))
             # print("   - {}".format(name_dest_npy))
 
-            printProgressBar(idx, len(paths), prefix = 'Progress:', suffix = f'Complete ({idx}/{len(paths)})', length = 50)
+            printProgressBar(idx+1, len(paths), prefix = 'Progress:', suffix = f'Complete ({idx+1}/{len(paths)})', length = 50)
 
     print('-> Done!')
 

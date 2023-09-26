@@ -20,10 +20,16 @@ class EunDataset(MonoDataset):
         # by 1 / image_height. Monodepth2 assumes a principal point to be exactly centered.
         # If your principal point is far from the center you might need to disable the horizontal
         # flip augmentation.
-        self.K = np.array([[0.58, 0, 0.5, 0],
-                           [0, 1.92, 0.5, 0],
-                           [0, 0, 1, 0],
-                           [0, 0, 0, 1]], dtype=np.float32)
+        # self.K = np.array([[0.58, 0, 0.5, 0],
+        #                    [0, 1.92, 0.5, 0],
+        #                    [0, 0, 1, 0],
+        #                    [0, 0, 0, 1]], dtype=np.float32)
+        self.K = np.array([
+            [0.7794213082337778,    0,                  0.5026959857813402, 0],
+            [0,                     1.3856313655679213, 0.504598195342162,  0],
+            [0,                     0,                  1,                  0],
+            [0,                     0,                  0,                  1]
+        ], dtype=np.float32)
 
         self.full_res_shape = (1280, 720)
 
@@ -35,7 +41,7 @@ class EunDataset(MonoDataset):
 
         return color
     
-    # since we don't have size, it is not used
+    # since we don't have side, it is not used
     def get_image_path(self, folder, frame_index, side):
         f_str = "{:010d}{}".format(frame_index, self.img_ext)
         image_path = os.path.join(
