@@ -4,6 +4,8 @@
 # which allows for non-commercial use only, the full terms of which are made
 # available in the LICENSE file.
 
+# -*- coding: utf-8 -*-
+
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
@@ -111,14 +113,14 @@ class Trainer:
         print("Training is using:\n  ", self.device)
 
         # data
-        datasets_dict = {"eun": datasets.EunDataset,
+        datasets_dict = {"eun": datasets.EunDataset,  
                          "kitti": datasets.KITTIRAWDataset,
                          "kitti_odom": datasets.KITTIOdomDataset}
         self.dataset = datasets_dict[self.opt.dataset]
 
-        # fpath = os.path.join(os.path.dirname(__file__), "splits", self.opt.split, "{}_files.txt")
+        fpath = os.path.join(os.path.dirname(__file__), "splits", self.opt.split, "{}_files.txt")
         # split option is not used, there is only one type of split
-        fpath = os.path.join(self.opt.data_path, "{}_files.txt")
+        # fpath = os.path.join(self.opt.data_path, "{}_files.txt")
 
         train_filenames = readlines(fpath.format("train"))
         val_filenames = readlines(fpath.format("val"))

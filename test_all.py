@@ -5,7 +5,8 @@ import glob
 
 assets_path = "assets"
 folder_path = f"{assets_path}/original_video"  # Update this with the actual path
-model = "finetuned_mono_1024x320"
+# model = "finetuned_mono_1024x320"
+model = "eun_mono_640x352"
 
 # paths
 original_video_path = f"assets/original_video"
@@ -83,7 +84,9 @@ for file_name in file_list:
                         mkdir -p {pose_path} && \
                         mkdir -p {log_path}"
         os.system(command0)
-
+        print("-------------------")
+        print("command 0 executed!")
+        print("-------------------")
 
         # Command 1: Extract frames from video
         # must be "jpg" NOT "jpeg"
