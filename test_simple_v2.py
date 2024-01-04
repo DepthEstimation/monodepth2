@@ -27,7 +27,6 @@ from evaluate_depth import STEREO_SCALE_FACTOR
 
 def resize_with_black_padding(img, expected_size):
     img.thumbnail((expected_size[0], expected_size[1]))
-    # print(img.size)
     delta_width = expected_size[0] - img.size[0]
     delta_height = expected_size[1] - img.size[1]
     pad_width = delta_width // 2
@@ -70,11 +69,14 @@ def parse_args():
                         help='if set, predicts metric depth instead of disparity. (This only '
                              'makes sense for stereo-trained KITTI models).',
                         action='store_true')
+    parser.add_argument('--reflective', type=bool,
+                        help='using reflective padding')
 
     return parser.parse_args()
 
 
 def test_simple(args):
+    print("hello")
     """Function to predict for a single image or folder of images
     """
     assert args.model_name is not None, \
@@ -151,9 +153,11 @@ def test_simple(args):
             original_width, original_height = input_image.size
             resized_width = int(original_width * feed_height / original_height)
             
-            input_image = input_image.resize((resized_width, feed_height), pil.LANCZOS)
-            input_image = resize_with_horizontal_reflective_padding(input_image, int((feed_width-resized_width)/2.0))
-            input_image.show()
+            if (args.reflective):
+                input_image = input_image.resize((resized_width, feed_height), pil.LANCZOS)
+                input_image = resize_with_horizontal_reflective_padding(input_image, int((feed_width-resized_width)/2.0))
+            else:
+                input_image = input_image.resize((feed_width, feed_height), pil.LANCZOS)
             input_image = transforms.ToTensor()(input_image).unsqueeze(0)
 
             # PREDICTION
@@ -163,9 +167,12 @@ def test_simple(args):
 
             disp = outputs[("disp", 0)]
             start_x, start_y = int((feed_width - resized_width)/2.0), 0
-            print(start_x, start_y)
-            # crop
-            disp_resized = disp[:, :, start_y:start_y+feed_height, start_x:start_x+resized_width]
+            # Resize
+            if (args.reflective):
+                disp_resized = disp[:, :, start_y:start_y+feed_height, start_x:start_x+resized_width]
+            else:
+                disp_resized = torch.nn.functional.interpolate(
+                    disp, (original_height, original_width), mode="bilinear", align_corners=False)
 
             # Saving numpy file
             output_name = os.path.splitext(os.path.basename(image_path))[0]

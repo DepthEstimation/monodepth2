@@ -15,7 +15,7 @@ file_dir = os.path.dirname(__file__)  # the directory that options.py resides in
 class MonodepthOptions:
     def __init__(self):
         self.parser = argparse.ArgumentParser(description="Monodepthv2 options")
-
+     
         # PATHS
         self.parser.add_argument("--data_path",
                                  type=str,
