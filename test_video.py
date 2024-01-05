@@ -4,7 +4,7 @@
 # which allows for non-commercial use only, the full terms of which are made
 # available in the LICENSE file.
 
-# Code: test.py
+# Code: test_video.py
 # In this code, there are four command
 # 1. split a video into images
 # 2. run test_simple.py
@@ -62,7 +62,6 @@ def test(args):
             else: # not using
                 command0 = f"mkdir -p assets/{model}/{base_name}/test_frames && mkdir -p assets/{model}/{base_name}/test_out_frames && mkdir -p assets/{model}/{base_name}/test_result_video && mkdir -p assets/{model}/{base_name}/test_concatenated_video"
             os.system(command0)
-            print("done!")
 
             # Command 1
             # split the video into images and place them in the 'test_frames' folder"
