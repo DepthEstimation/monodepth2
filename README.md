@@ -1,4 +1,4 @@
-# Custom Monodepth2(ours)
+# Custom Monodepth2(Ours)
 
 We developed customed open source for our project using original monodepth2 open source linked in
 
