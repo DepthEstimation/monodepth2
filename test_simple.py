@@ -65,8 +65,10 @@ def test_simple(args):
 
     if torch.cuda.is_available() and not args.no_cuda:
         device = torch.device("cuda")
+        print("cuda is used")
     else:
         device = torch.device("cpu")
+        print("cpu is used")
 
     if args.pred_metric_depth and "stereo" not in args.model_name:
         print("Warning: The --pred_metric_depth flag only makes sense for stereo-trained KITTI "
