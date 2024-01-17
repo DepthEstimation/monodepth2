@@ -25,6 +25,8 @@ from layers import disp_to_depth
 from utils import download_model_if_doesnt_exist
 from evaluate_depth import STEREO_SCALE_FACTOR
 
+# torch.backends.cudnn.benchmark = True
+
 def resize_with_black_padding(img, expected_size):
     img.thumbnail((expected_size[0], expected_size[1]))
     delta_width = expected_size[0] - img.size[0]
@@ -49,16 +51,17 @@ def parse_args():
                         help='path to save output images')
     parser.add_argument('--model_name', type=str,
                         help='name of a pretrained model to use',
-                        choices=[
-                            "mono_640x192",
-                            "stereo_640x192",
-                            "mono+stereo_640x192",
-                            "mono_no_pt_640x192",
-                            "stereo_no_pt_640x192",
-                            "mono+stereo_no_pt_640x192",
-                            "mono_1024x320",
-                            "stereo_1024x320",
-                            "mono+stereo_1024x320"])
+                        # choices=[
+                        #     "mono_640x192",
+                        #     "stereo_640x192",
+                        #     "mono+stereo_640x192",
+                        #     "mono_no_pt_640x192",
+                        #     "stereo_no_pt_640x192",
+                        #     "mono+stereo_no_pt_640x192",
+                        #     "mono_1024x320",
+                        #     "stereo_1024x320",
+                        #     "mono+stereo_1024x320"]
+                            )
     parser.add_argument('--ext', type=str,
                         help='image extension to search for in folder', default="jpg")
     parser.add_argument("--no_cuda",
@@ -98,8 +101,9 @@ def test_simple(args):
     # LOADING PRETRAINED MODEL
     print("   Loading pretrained encoder")
     encoder = networks.ResnetEncoder(18, False)
+    # print(" 1: encoder_path={}, map_location={}".format(encoder_path, device))
     loaded_dict_enc = torch.load(encoder_path, map_location=device)
-
+    # print(" 2 ")
     # extract the height and width of image that this model was trained with
     feed_height = loaded_dict_enc['height']
     feed_width = loaded_dict_enc['width']
