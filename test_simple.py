@@ -12,6 +12,8 @@ import glob
 import argparse
 import numpy as np
 import PIL.Image as pil
+from PIL import ImageOps
+from PIL import Image as im
 import matplotlib as mpl
 import matplotlib.cm as cm
 
@@ -23,6 +25,21 @@ from layers import disp_to_depth
 from utils import download_model_if_doesnt_exist
 from evaluate_depth import STEREO_SCALE_FACTOR
 
+# torch.backends.cudnn.benchmark = True
+
+def resize_with_black_padding(img, expected_size):
+    img.thumbnail((expected_size[0], expected_size[1]))
+    delta_width = expected_size[0] - img.size[0]
+    delta_height = expected_size[1] - img.size[1]
+    pad_width = delta_width // 2
+    pad_height = delta_height // 2
+    padding = (pad_width, pad_height, delta_width - pad_width, delta_height - pad_height)
+    return ImageOps.expand(img, padding)
+
+def resize_with_horizontal_reflective_padding(img, pad_size):
+    padded = np.pad(img, pad_width=((0, 0), (pad_size,pad_size), (0, 0)), mode='symmetric')
+    data = im.fromarray(padded)
+    return data
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -34,16 +51,17 @@ def parse_args():
                         help='path to save output images')
     parser.add_argument('--model_name', type=str,
                         help='name of a pretrained model to use',
-                        choices=[
-                            "mono_640x192",
-                            "stereo_640x192",
-                            "mono+stereo_640x192",
-                            "mono_no_pt_640x192",
-                            "stereo_no_pt_640x192",
-                            "mono+stereo_no_pt_640x192",
-                            "mono_1024x320",
-                            "stereo_1024x320",
-                            "mono+stereo_1024x320"])
+                        # choices=[
+                        #     "mono_640x192",
+                        #     "stereo_640x192",
+                        #     "mono+stereo_640x192",
+                        #     "mono_no_pt_640x192",
+                        #     "stereo_no_pt_640x192",
+                        #     "mono+stereo_no_pt_640x192",
+                        #     "mono_1024x320",
+                        #     "stereo_1024x320",
+                        #     "mono+stereo_1024x320"]
+                            )
     parser.add_argument('--ext', type=str,
                         help='image extension to search for in folder', default="jpg")
     parser.add_argument("--no_cuda",
@@ -53,6 +71,8 @@ def parse_args():
                         help='if set, predicts metric depth instead of disparity. (This only '
                              'makes sense for stereo-trained KITTI models).',
                         action='store_true')
+    parser.add_argument('--reflective', type=bool,
+                        help='using reflective padding')
 
     return parser.parse_args()
 
@@ -83,8 +103,9 @@ def test_simple(args):
     # LOADING PRETRAINED MODEL
     print("   Loading pretrained encoder")
     encoder = networks.ResnetEncoder(18, False)
+    # print(" 1: encoder_path={}, map_location={}".format(encoder_path, device))
     loaded_dict_enc = torch.load(encoder_path, map_location=device)
-
+    # print(" 2 ")
     # extract the height and width of image that this model was trained with
     feed_height = loaded_dict_enc['height']
     feed_width = loaded_dict_enc['width']
@@ -134,7 +155,12 @@ def test_simple(args):
             # Load image and preprocess
             input_image = pil.open(image_path).convert('RGB')
             original_width, original_height = input_image.size
-            input_image = input_image.resize((feed_width, feed_height), pil.LANCZOS)
+            resized_width = int(original_width * feed_height / original_height)
+            if args.reflective:
+                input_image = input_image.resize((resized_width, feed_height), pil.LANCZOS)
+                input_image = resize_with_horizontal_reflective_padding(input_image, int((feed_width-resized_width)/2.0))
+            else:
+                input_image = input_image.resize((feed_width, feed_height), pil.LANCZOS)
             input_image = transforms.ToTensor()(input_image).unsqueeze(0)
 
             # PREDICTION
@@ -143,9 +169,17 @@ def test_simple(args):
             outputs = depth_decoder(features)
 
             disp = outputs[("disp", 0)]
-            disp_resized = torch.nn.functional.interpolate(
-                disp, (original_height, original_width), mode="bilinear", align_corners=False)
-
+            start_x, start_y = int((feed_width - resized_width)/2.0), 0
+            
+            # Crop and Resize
+            if args.reflective: # using reflective padding
+                disp_resized = disp[:, :, start_y:start_y+feed_height, start_x:start_x+resized_width]
+                disp_resized = torch.nn.functional.interpolate(
+                    disp_resized, (original_height, original_width), mode="bilinear", align_corners=False)
+            else: # not using
+                disp_resized = torch.nn.functional.interpolate(
+                    disp, (original_height, original_width), mode="bilinear", align_corners=False)
+            
             # Saving numpy file
             output_name = os.path.splitext(os.path.basename(image_path))[0]
             scaled_disp, depth = disp_to_depth(disp, 0.1, 100)
@@ -168,12 +202,36 @@ def test_simple(args):
             name_dest_im = os.path.join(output_directory, "{}_disp.jpeg".format(output_name))
             im.save(name_dest_im)
 
-            print("   Processed {:d} of {:d} images - saved predictions to:".format(
-                idx + 1, len(paths)))
-            print("   - {}".format(name_dest_im))
-            print("   - {}".format(name_dest_npy))
+            # print("   Processed {:d} of {:d} images - saved predictions to:".format(
+            #     idx + 1, len(paths)))
+            # print("   - {}".format(name_dest_im))
+            # print("   - {}".format(name_dest_npy))
+
+            printProgressBar(idx+1, len(paths), prefix = 'Progress:', suffix = f'Complete ({idx+1}/{len(paths)})', length = 50)
 
     print('-> Done!')
+
+
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
 
 
 if __name__ == '__main__':

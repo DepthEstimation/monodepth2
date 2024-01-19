@@ -9,6 +9,10 @@ from __future__ import absolute_import, division, print_function
 import os
 import numpy as np
 
+import glob
+import PIL.Image as pil
+
+
 import torch
 from torch.utils.data import DataLoader
 
@@ -17,6 +21,44 @@ from utils import readlines
 from options import MonodepthOptions
 from datasets import KITTIOdomDataset
 import networks
+
+from datasets.mono_dataset import MonoDataset
+from datasets.kitti_dataset import KITTIDataset
+
+
+class KITTIOdomDataset(MonoDataset):
+    """KITTI dataset for odometry training and testing
+    """
+    def __init__(self, *args, **kwargs):
+        super(KITTIOdomDataset, self).__init__(*args, **kwargs)
+
+        self.K = np.array([[0.58, 0, 0.5, 0],
+                           [0, 1.92, 0.5, 0],
+                           [0, 0, 1, 0],
+                           [0, 0, 0, 1]], dtype=np.float32)
+
+    def get_image_path(self, folder, frame_index, side):
+        f_str = "{:10d}{}".format(frame_index, self.img_ext)
+        # image_path = os.path.join(
+        #     self.data_path,
+        #     "frames/{}".format(folder),
+        #     f_str)
+        image_path = os.path.join(
+            "{}".format(folder)
+            )
+        # print("*** ", image_path)
+        return image_path
+
+    def check_depth(self):
+        pass
+
+    def get_color(self, folder, frame_index, side, do_flip):
+        color = self.loader(self.get_image_path(folder, frame_index, side))
+
+        if do_flip:
+            color = color.transpose(pil.FLIP_LEFT_RIGHT)
+
+        return color
 
 
 # from https://github.com/tinghuiz/SfMLearner
@@ -52,14 +94,17 @@ def evaluate(opt):
     assert os.path.isdir(opt.load_weights_folder), \
         "Cannot find a folder at {}".format(opt.load_weights_folder)
 
-    assert opt.eval_split == "odom_9" or opt.eval_split == "odom_10" or opt.eval_split == "odom_22", \
-        "eval_split should be either odom_9 or odom_10"
+    # assert opt.eval_split == "odom_9" or opt.eval_split == "odom_10" or opt.eval_split == "odom_22", \
+    #     "eval_split should be either odom_9 or odom_10"
 
-    sequence_id = int(opt.eval_split.split("_")[1])
+    # sequence_id = int(opt.eval_split.split("_")[1])
 
-    filenames = readlines(
-        os.path.join(os.path.dirname(__file__), "splits", "odom",
-                     "test_files_{:02d}.txt".format(sequence_id)))
+    # filenames = readlines(
+    #     os.path.join(os.path.dirname(__file__), "splits", "odom",
+    #                  "test_files_{:02d}.txt".format(sequence_id)))
+
+    filenames = sorted(glob.glob(os.path.join(opt.data_path, 'frames', opt.eval_split, "*.jpg")))
+    filenames = filenames[:-1]
 
     dataset = KITTIOdomDataset(opt.data_path, filenames, opt.height, opt.width,
                                [0, 1], 4, is_train=False)
@@ -125,7 +170,7 @@ def evaluate(opt):
 
     # print("\n   Trajectory error: {:0.3f}, std: {:0.3f}\n".format(np.mean(ates), np.std(ates)))
 
-    save_path = os.path.join(opt.load_weights_folder, "poses.npy")
+    save_path = os.path.join(opt.data_path, opt.load_weights_folder, 'pose', opt.eval_split, "poses.npy")
     np.save(save_path, pred_poses)
     print("-> Predictions saved to", save_path)
 
