@@ -19,9 +19,11 @@ import datetime
 import argparse
 import glob
 
+
+# Input video file should be placed under `assets/original_video` folder
 assets_path = "assets"
-original_video_path = f"{assets_path}/original_video" # Update this with the actual path
-splits_path = f"{assets_path}/splits"
+original_video_path = f"{assets_path}/original_video"
+# splits_path = f"{assets_path}/splits"
 
 def print_message(msg):
     print(msg)
@@ -41,7 +43,7 @@ def store_video_info(file_name, total_time, log_path):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
     
-    video_info = f"Video Info:\n> file path : assets/test_videos/{file_name}\n> length : {length}\n> width : {width}\n> height : {height}\n> fps : {round(fps)}\n> reflective : {args.reflective}\n"
+    video_info = f"Video Info:\n> file path : {assets_path}/original_video/{file_name}\n> length : {length}\n> width : {width}\n> height : {height}\n> fps : {round(fps)}\n> reflective : {args.reflective}\n"
 
     evaluation_info = f"\nEvaluation:\n> Average of execution time per image: {total_time/length:.5f} sec\n"
 
@@ -86,7 +88,7 @@ def test(args):
 
     model_paths = [depth_path, depth_video_path, comparison_video_path, pose_path, log_path]
 
-    # check if file exists
+    # check if given video file exists in "assets/original_video"
     if not os.path.isfile(os.path.join(original_video_path, file_name)):
         print(f"--file_name {file_name}\nNo such file in the {original_video_path}")
         exit()
@@ -145,12 +147,25 @@ def test(args):
     video_file = file_name
     if args.reflective:
         video_file = video_file.replace('.mp4', '_reflective.mp4')
-    command3 = f"ffmpeg -framerate 30 -pattern_type glob -i '{depth_path}/{base_name}/*.jpeg' -c:v h264_nvenc -pix_fmt yuv420p {depth_video_path}/{base_name}/{video_file}"
+    # command3 = f"ffmpeg -framerate 30 -pattern_type glob -i '{depth_path}/{base_name}/*.jpeg' -c:v h264_nvenc -pix_fmt yuv420p {depth_video_path}/{base_name}/{video_file}"
+    command3 = f"ffmpeg -framerate 30 -pattern_type glob -i '{depth_path}/{base_name}/*.jpeg' -c:v copy -pix_fmt yuv420p {depth_video_path}/{base_name}/{video_file}"
+    command3_1 = f'ffmpeg -i {depth_video_path}/{base_name}/{video_file} -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" -loop 0 {depth_video_path}/{base_name}/{base_name}.gif'
+
     if not os.path.exists(os.path.join(f'{depth_video_path}/{base_name}', video_file)):
         os.system(command3)
         print_message('creating depth video (command 3 executed)!')
+
+        os.system(command3_1)
     else:
         print_message('skip creating depth video (command 3 skipped)!')
+
+        if not os.path.exists(os.path.join(f'{depth_video_path}/{base_name}', f'{base_name}.gif')):
+            os.system(command3_1)
+            print_message('creating depth gif (command 3_1)!')
+        else:
+            print_message('skip creating depth gif (command 3_1)!')
+
+
 
     # Command 4
     # create a concatenated video with orignal video and depth map video
@@ -180,6 +195,8 @@ def test(args):
     if not os.path.exists(f"{pose_path}/{base_name}/poses.npy"):
         os.system(command5)
         print_message('evaluating pose (command 5 executed)!')
+    else: 
+        print('poses.npy already exists. skip generating new one.')
     
     # Command 6
     # convert pose to trajectory
