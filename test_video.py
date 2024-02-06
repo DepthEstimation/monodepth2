@@ -21,7 +21,7 @@ import glob
 
 
 # Input video file should be placed under `assets/original_video` folder
-assets_path = "assets"
+assets_path = "assets" # user can specify this directory using args
 original_video_path = f"{assets_path}/original_video"
 # splits_path = f"{assets_path}/splits"
 
@@ -66,6 +66,7 @@ def parse_args():
                         help='using reflective padding')
     parser.add_argument('--file_name', type=str,
                         help='using reflective padding')
+    parser.add_argument('--assets_path', type=str, help='path to assets folder', default=assets_path)
 
     return parser.parse_args()
 
@@ -77,6 +78,7 @@ def test(args):
     model = args.model_name
     file_name = args.file_name
     total_time = 0
+    assets_path = args.assets_path
 
     # Paths
     frames_path = f"{assets_path}/frames"
