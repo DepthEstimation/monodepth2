@@ -26,6 +26,8 @@ import networks
 from IPython import embed
 
 
+import shutil
+
 class Trainer:
     def __init__(self, options):
         self.opt = options
@@ -38,7 +40,7 @@ class Trainer:
         self.models = {}
         self.parameters_to_train = []
 
-        self.device = torch.device("cpu" if self.opt.no_cuda else "cuda")
+        self.device = torch.device("cpu" if self.opt.no_cuda else "cuda:1")
 
         self.num_scales = len(self.opt.scales)
         self.num_input_frames = len(self.opt.frame_ids)
@@ -117,11 +119,20 @@ class Trainer:
                          "kitti_odom": datasets.KITTIOdomDataset}
         self.dataset = datasets_dict[self.opt.dataset]
 
+
+        ### if training dataset it 'my' then create custom training and validation fileset
         fpath = ''
         if self.opt.split == "my":
-            command = f"python create_split_file.py --data_path {self.opt.data_path}"
+            # command = "python create_split_file.py --data_path {}".format(self.opt.data_path)
+            # fpath = os.path.join(self.opt.data_path, "{}_files.txt")
+
+            command = "python create_split_file.py --data_path {} --save_path {}".format(self.opt.data_path, self.log_path)
+            fpath = os.path.join(self.log_path, "{}_files.txt")
+
             os.system(command)
-            fpath = os.path.join(self.opt.data_path, "{}_files.txt")
+            
+            # shutil.copyfile(fpath.format("train"), os.path.join(self.log_path, 'train_files.txt'))
+            # shutil.copyfile(fpath.format("val"), os.path.join(self.log_path, 'val_files.txt'))
         else:
             fpath = os.path.join(os.path.dirname(__file__), "splits", self.opt.split, "{}_files.txt")
 
@@ -130,11 +141,13 @@ class Trainer:
         img_ext = '.png' if self.opt.png else '.jpg'
 
         num_train_samples = len(train_filenames)
+        
         self.num_total_steps = num_train_samples // self.opt.batch_size * self.opt.num_epochs
 
         train_dataset = self.dataset(
             self.opt.data_path, train_filenames, self.opt.height, self.opt.width,
             self.opt.frame_ids, 4, is_train=True, img_ext=img_ext)
+        
         self.train_loader = DataLoader(
             train_dataset, self.opt.batch_size, True,
             num_workers=self.opt.num_workers, pin_memory=True, drop_last=True)

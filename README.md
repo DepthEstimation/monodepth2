@@ -10,6 +10,27 @@ Follow the instruction in the original repository for environment setup.
 
 If code gets stuck executing `torch.load()`, then try using higher version of pytorch.
 
+```
+conda create -n monodepth2 python=3.6.6
+conda install pytorch=1.0.1 torchvision=0.2.1 -c pytorch
+pip install tensorboardX==1.4
+conda install opencv=3.3.1
+```
+> need to use pytorch version 1.1.0> and 0.4.1<
+
+-> or might want to try `conda install pytorch=0.4.1 cuda90 -c pytorch` [reference](https://pytorch.org/get-started/previous-versions/#commands-for-versions--100-1)
+
+### Used 
+```
+FFMPEG            3.4
+torch             1.10.2
+torchvision       0.2.1
+scikit-learn      0.24.2
+scipy             1.5.4
+numpy             1.19.2
+ipython           7.16.3
+```
+
 ## Test
 
 We added a python sript `test_video.py` that will create a depth map video of a specified video file. It has 2 required arguments `--model` and `--file.`--reflective` is an optional argument that slightly increases the quality of the created depth map.
@@ -105,6 +126,13 @@ Furthermore, before traing on the dataset, camera should be calibrated and the K
 
 example)
 * `python train.py --model_name my_mono_model --data_path path/to/my_data --log_dir models --dataset my --width 1280 --height 704 --split my --batch_size 8`
+
+
+---
+# Todo
+ * [] model 생성 파일 안에 사용한 데이터셋 정보와 tain, val 파일 저장하게 만들기
+ * [] 
+
 
 
 ____

@@ -84,7 +84,7 @@ def test_simple(args):
         "You must specify the --model_name parameter; see README.md for an example"
 
     if torch.cuda.is_available() and not args.no_cuda:
-        device = torch.device("cuda")
+        device = torch.device("cuda:1")
         print("cuda is used")
     else:
         device = torch.device("cpu")

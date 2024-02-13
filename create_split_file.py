@@ -7,7 +7,8 @@ import argparse
 parser = argparse.ArgumentParser(description='')
 
 parser.add_argument('--data_path', type=str,
-                    help='data path')
+                    help='data path', required=True)
+parser.add_argument('--save_path', type=str, help='save path', required=True)
 
 args = parser.parse_args()
 
@@ -29,6 +30,9 @@ b = int(b)
 sum = a+b
 
 
+if not os.path.exists(args.save_path):
+    os.makedirs(args.save_path)
+
 if not(os.path.exists(path) and os.path.isdir(path)):
     print("invalid directory path")
     exit()
@@ -39,19 +43,21 @@ path = os.path.normpath(path)
 
 
 # odom_test_file_path = "odom_test_{}.txt"
-train_file_path = os.path.join("train_files.txt")
-val_file_path = os.path.join("val_files.txt")
+train_file_path = os.path.join(args.save_path, "train_files.txt")
+val_file_path = os.path.join(args.save_path, "val_files.txt")
 
 print(train_file_path)
 
 all_file_list = []
 
+'''
 folders = os.listdir(path)
 os.chdir(path)
 for folder in folders:
     if os.path.isdir(folder):
         # print('yes')
-        file_list = sorted(glob.glob(os.path.join(folder, "*.jpg")))
+        # file_list = sorted(glob.glob(os.path.join(folder, 'sensor_raw_data', 'camera', "*.jpg")))
+        file_list = sorted(glob.glob(os.path.join(folder, '**', '**', 'image_00', 'data', "*.jpg")))
         # print(len(file_list))
         # f.writelines(file_list)
         # format is <folder> <number> <r | l>
@@ -65,7 +71,48 @@ for folder in folders:
         # need to remove first and last one because of frame_index [0, -1, 1]
         file_list = file_list[1:-1]
         for item in file_list:
-            all_file_list.append(folder + " " + str(int("".join(os.path.splitext(os.path.basename(item))[:-1]))) + " " + "l" + "\n")
+            f_name = os.path.splitext(os.path.basename(item))
+            f_num = "".join(f_name[:-1]).split('_')[-1]
+
+            all_file_list.append(folder + " " + str(int(f_num)) + " " + "l" + "\n")
+'''
+
+os.chdir(path)
+
+folders = os.listdir(path)
+# print(folders)
+
+for folder in folders:
+    if os.path.isdir(folder):
+
+
+        sub_folders = os.listdir(os.path.join(path, folder))
+        # os.chdir(os.path.join(path, folder))
+        # print(sub_folders)
+        for sf in sub_folders:
+            if os.path.isdir(os.path.join(folder, sf)):
+
+                # print('yes')
+                # file_list = sorted(glob.glob(os.path.join(folder, 'sensor_raw_data', 'camera', "*.jpg")))
+                file_list = sorted(glob.glob(os.path.join(folder, sf, 'image_00', 'data', "*.jpg")))
+                # print(len(file_list))
+                # f.writelines(file_list)
+                # format is <folder> <number> <r | l>
+
+                # # for individual file
+                # with open(odom_test_file_path.format(folder), 'w') as f:
+                #     for item in file_list:
+                #         f.write(folder + " " + str(int("".join(os.path.splitext(os.path.basename(item))[:-1]))) + " " + "l" + "\n")
+            
+                # for train and val files
+                # need to remove first and last one because of frame_index [0, -1, 1]
+                file_list = file_list[1:-1]
+                for item in file_list:
+                    f_name = os.path.splitext(os.path.basename(item))
+                    f_num = "".join(f_name[:-1]).split('_')[-1]
+
+                    all_file_list.append(os.path.join(folder, sf) + " " + str(int(f_num)) + " " + "l" + "\n")
+
 
 random.shuffle(all_file_list)
 file_len = len(all_file_list)

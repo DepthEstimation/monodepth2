@@ -24,14 +24,35 @@ class MyDataset(MonoDataset):
         #                    [0, 1.92, 0.5, 0],
         #                    [0, 0, 1, 0],
         #                    [0, 0, 0, 1]], dtype=np.float32)
+        # fx -- cx --
+        # -- fy cy --
+        # -- -- -- --
+        # -- -- -- --
+        # camera front intrinsic 1920 * 1080
         self.K = np.array([
-            [0.7794213082337778,    0,                  0.5026959857813402, 0],
-            [0,                     1.3856313655679213, 0.504598195342162,  0],
+            [2014.3176269531,       0,                  970.4075927734,     0],
+            [0,                     2014.1853027344,    522.5059814453,     0],
             [0,                     0,                  1,                  0],
-            [0,                     0,                  0,                  1]
-        ], dtype=np.float32)
+            [0,                     0,                  0,                  1]], dtype=np.float32)
+        self.K[0] /= 1920
+        self.K[1] /= 1080
 
-        self.full_res_shape = (1280, 720)
+        # unknown
+        # self.K = np.array([
+        #     [1083.6765136719,       0,                  966.0305786133,     0],
+        #     [0,                     1094.7344970703,    530.5824584961,     0],
+        #     [0,                     0,                  1,                  0],
+        #     [0,                     0,                  0,                  1]
+        # ], dtype=np.float32)
+
+        # self.K = np.array([[0.58, 0, 0.5, 0],
+        #                    [0, 1.92, 0.5, 0],
+        #                    [0, 0, 1, 0],
+        #                    [0, 0, 0, 1]], dtype=np.float32)
+
+        self.full_res_shape = (1242, 375)
+
+        # self.full_res_shape = (1920, 1080) # where is this used?
 
     def get_color(self, folder, frame_index, side, do_flip):
         color = self.loader(self.get_image_path(folder, frame_index, side))
@@ -44,10 +65,19 @@ class MyDataset(MonoDataset):
     # since we don't have side, it is not used
     def get_image_path(self, folder, frame_index, side):
         f_str = "{:010d}{}".format(frame_index, self.img_ext)
+        # f_str = "{}_{:02}{}".format(folder, frame_index, self.img_ext)
+
+
+        # image_path = os.path.join(
+        #     # 폴더 경로 == <data_path>/<folder>/{:010d}.jpg
+        #     # ex) ./train_data/frames/lozan/00000000001.jpg
+        #     self.data_path, folder, 'image_00', 'data', f_str)
+        # return image_path
+
         image_path = os.path.join(
             # 폴더 경로 == <data_path>/<folder>/{:010d}.jpg
             # ex) ./train_data/frames/lozan/00000000001.jpg
-            self.data_path, folder, f_str)
+            self.data_path, folder, 'image_00', 'data', f_str)
         return image_path
     
     def check_depth(self):
@@ -55,5 +85,5 @@ class MyDataset(MonoDataset):
         return False
     
     def get_depth(self, folder, frame_index, side, do_flip):
-        print("get_depth: This function should not be called!")
+        print("get_depth: This function should not be called!") # because we don't have depth data
         return None
