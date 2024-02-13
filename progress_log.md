@@ -79,7 +79,7 @@
 
 
 # 240207W
-
+> Eunhyeok Kwon
 * training on 1920x1080 sized images takes long time.
     * The estimated time was displayed to be 150 hours but about 16 hours have passed for the estimated time to reach 100 hours
     * Seems like it will take roughly 48 hours == 2 full days
@@ -97,12 +97,59 @@
 
 `python train.py --model_name my_kitti --data_path /media/cgv/f9dacde2-bd46-4e02-858d-ef0977ddf2a2/kitti_data/data --log_dir /media/cgv/f9dacde2-bd46-4e02-858d-ef0977ddf2a2/models --dataset my --width 1216 --height 352 --split my --batch_size 12`
 
-# 240213M
+# 240213T
 > Taemin Lee
 
 * Update the my_dataset.py
     * change the K matrix (normalization)
     * width: 1920, height: 1080 (AI Hub Camera front images size)
     * first row / width, second row / height
+    * ` python train.py --model_name ai_hub_mono_model_camera --data_path /media/cgv/f9dacde2-bd46-4e02-858d-ef0977ddf2a2/088.승용_자율주행차_주간_도심도로_데이터/01-1.정식개방데이터/Training/01.원천데이터/TS --log_dir /media/cgv/f9dacde2-bd46-4e02-858d-ef0977ddf2a2/models --dataset my --width 1920 --height 1056 --split my --batch_size 4 --num_epochs 1`
+        * estimated 7 hours
+        * stopped training because wanted to test if resizing works too
 
-`python train.py --model_name my_ai_hub --data_path /media/cgv/f9dacde2-bd46-4e02-858d-ef0977ddf2a2/kitti_data/data --log_dir /media/cgv/f9dacde2-bd46-4e02-858d-ef0977ddf2a2/models --dataset my --width 960 --height 544 --split my --batch_size 12`
+* 모델 이름 만드는 규칙
+    * `<데이터 셋>_<width>x<height>_<other>_v<#>`
+        * can skip `<other>` part
+
+* Sizes for AI-HUB dataset
+    * 1920x1088
+        * 960x544
+        * 480x272
+    * 1920x1056
+        * 640x352
+
+* Training
+    * `python train.py --model_name aihub_640x352_camera_v1 --data_path /media/cgv/f9dacde2-bd46-4e02-858d-ef0977ddf2a2/088.승용_자율주행차_주간_도심도로_데이터/01-1.정식개방데이터/Training/01.원천데이터/TS --log_dir /media/cgv/f9dacde2-bd46-4e02-858d-ef0977ddf2a2/models --dataset my --width 640 --height 352 --split my --batch_size 12 --num_epochs 20`
+    * removed `self.full_res_shape = (1242, 375)` from `my_dataset.py` to see if training still works without this line
+    * So this is testing 3 things
+        1. If camera intrinsic normalization works
+        2. If assigned width and height works
+        3. if `self.full_res_shape` is not needed when training
+
+* Fish eye datasets
+    * found some useful dataset from [OmniCV WorkshopCVPR2020](https://sites.google.com/view/omnicv-cvpr2020/useful-datasets)
+
+        * [Friedrich-Alexander-Universität Fisheye Data Set](https://www.lms.tf.fau.eu/research/downloads/fisheye-data-set/)
+            * Download doesn't work
+        * [Large-Scale Direct SLAM for Omnidirectional Cameras](https://cvg.cit.tum.de/data/datasets/omni-lsdslam)
+            * Download works and it also has GT data
+            * made by TUM
+
+* Test TUM fish eye dataset
+    * `python test_simple.py --model_name mono_640x192 --image_path assets/tum_fisheye_1424198516.405755348.png --out assets`
+    * The result is bad. It is not able to process any depth features
+    * ![test result comparison](images_for_readme/240213_TUM_fisheye-test.png)
+
+* Test with normalized and resized model trained with AI HUB dataset
+    * weights_0
+        * `python test_video.py --model_name aihub_640x352_camera_v1_weights_0 --file_name oseok.mp4`
+        * result:
+        * ![test result](images_for_readme/240213_test-result_aihub_640x352_camera_v1_weights_0.gif)
+        * Something is not quite right...
+        * Training is continued but seems like some change is needed
+
+* TODO
+    * model path도 arg로 입력 받을 수 있도록 코드 추가
+    * 모델 여러개 동시에 학습하는게 안됐었는데 width, height 작게 arg로 줘서 돌리면 여러개 동시 학습 가능할 것 같음
+        * 근데 cpu는 상당히 많이 사용하고 있어서 안될 수도 있는데 한번 테스트 해봐야 할듯 
