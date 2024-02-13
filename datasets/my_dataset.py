@@ -50,7 +50,7 @@ class MyDataset(MonoDataset):
         #                    [0, 0, 1, 0],
         #                    [0, 0, 0, 1]], dtype=np.float32)
 
-        self.full_res_shape = (1242, 375)
+        # self.full_res_shape = (1242, 375)
 
         # self.full_res_shape = (1920, 1080) # where is this used?
 
@@ -64,8 +64,8 @@ class MyDataset(MonoDataset):
     
     # since we don't have side, it is not used
     def get_image_path(self, folder, frame_index, side):
-        f_str = "{:010d}{}".format(frame_index, self.img_ext)
-        # f_str = "{}_{:02}{}".format(folder, frame_index, self.img_ext)
+        # f_str = "{:010d}{}".format(frame_index, self.img_ext)
+        f_str = "{}_{:02}{}".format(folder, frame_index, self.img_ext) # for ai-hub data
 
 
         # image_path = os.path.join(
@@ -77,7 +77,7 @@ class MyDataset(MonoDataset):
         image_path = os.path.join(
             # 폴더 경로 == <data_path>/<folder>/{:010d}.jpg
             # ex) ./train_data/frames/lozan/00000000001.jpg
-            self.data_path, folder, 'image_00', 'data', f_str)
+            self.data_path, folder, 'sensor_raw_data', 'camera', f_str) # for ai-hub data
         return image_path
     
     def check_depth(self):

@@ -50,14 +50,15 @@ print(train_file_path)
 
 all_file_list = []
 
-'''
+
+
 folders = os.listdir(path)
 os.chdir(path)
 for folder in folders:
     if os.path.isdir(folder):
         # print('yes')
-        # file_list = sorted(glob.glob(os.path.join(folder, 'sensor_raw_data', 'camera', "*.jpg")))
-        file_list = sorted(glob.glob(os.path.join(folder, '**', '**', 'image_00', 'data', "*.jpg")))
+        file_list = sorted(glob.glob(os.path.join(folder, 'sensor_raw_data', 'camera', "*.jpg")))
+        # file_list = sorted(glob.glob(os.path.join(folder, '**', '**', 'image_00', 'data', "*.jpg")))
         # print(len(file_list))
         # f.writelines(file_list)
         # format is <folder> <number> <r | l>
@@ -75,7 +76,10 @@ for folder in folders:
             f_num = "".join(f_name[:-1]).split('_')[-1]
 
             all_file_list.append(folder + " " + str(int(f_num)) + " " + "l" + "\n")
+
+
 '''
+# for KITTI dataset
 
 os.chdir(path)
 
@@ -112,7 +116,7 @@ for folder in folders:
                     f_num = "".join(f_name[:-1]).split('_')[-1]
 
                     all_file_list.append(os.path.join(folder, sf) + " " + str(int(f_num)) + " " + "l" + "\n")
-
+'''
 
 random.shuffle(all_file_list)
 file_len = len(all_file_list)
