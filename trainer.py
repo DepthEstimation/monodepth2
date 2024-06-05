@@ -23,13 +23,22 @@ from layers import *
 
 import datasets
 import networks
-from IPython import embed
+# from IPython import embed
 
+import matplotlib.pyplot as plt
 
 import shutil
 
 class Trainer:
     def __init__(self, options):
+
+        self.temp_loss_values = []
+        self.loss_values = []
+        self.temp_val_loss_values = []
+        self.val_loss_values = []
+        plt.ion()
+        plt.show(block=False)
+        
         self.opt = options
         self.log_path = os.path.join(self.opt.log_dir, self.opt.model_name)
 
@@ -40,7 +49,7 @@ class Trainer:
         self.models = {}
         self.parameters_to_train = []
 
-        self.device = torch.device("cpu" if self.opt.no_cuda else "cuda:1")
+        self.device = torch.device("cpu" if self.opt.no_cuda else "cuda:{}".format(self.opt.cuda))
 
         self.num_scales = len(self.opt.scales)
         self.num_input_frames = len(self.opt.frame_ids)
@@ -114,27 +123,33 @@ class Trainer:
 
         # data
         datasets_dict = {
-                         "my": datasets.MyDataset,
+                         "aihub88": datasets.Aihub88Dataset,
+                         "boreas": datasets.BoreasDataset,
                          "kitti": datasets.KITTIRAWDataset,
-                         "kitti_odom": datasets.KITTIOdomDataset}
+                         "kitti_odom": datasets.KITTIOdomDataset,
+                         "kitti_campus": datasets.KITTICampusDataset,
+                         "kitti_resize": datasets.KITTIResizeDataset,
+                         "aihub88_resize": datasets.Aihub88ResizeDataset,
+                         "kitti360": datasets.KITTI360Dataset,
+                         "ncn_ch0": datasets.NCN_CH0_Dataset,
+                         "hgu2023": datasets.HGU2023_Dataset,
+                         }
         self.dataset = datasets_dict[self.opt.dataset]
 
 
-        ### if training dataset it 'my' then create custom training and validation fileset
-        fpath = ''
-        if self.opt.split == "my":
-            # command = "python create_split_file.py --data_path {}".format(self.opt.data_path)
-            # fpath = os.path.join(self.opt.data_path, "{}_files.txt")
+       
+        ## check if split file exists in splits directory
+        #       if split file does NOT exist --> create new split file
+        #       else --> use the existing split file
 
-            command = "python create_split_file.py --data_path {} --save_path {}".format(self.opt.data_path, self.log_path)
-            fpath = os.path.join(self.log_path, "{}_files.txt")
-
+        split_directory = os.path.join(os.path.dirname(__file__), "splits", self.opt.split)
+        # print(os.path.exists(split_directory))
+        if not os.path.exists(split_directory):
+            # command = "python create_split_file.py --data_path {} --save_path {}".format(self.opt.data_path, self.log_path)
+            command = "python create_split_file.py --data_path {} --save_path {} --dataset {}".format(self.opt.data_path, split_directory, self.opt.dataset)
             os.system(command)
-            
-            # shutil.copyfile(fpath.format("train"), os.path.join(self.log_path, 'train_files.txt'))
-            # shutil.copyfile(fpath.format("val"), os.path.join(self.log_path, 'val_files.txt'))
-        else:
-            fpath = os.path.join(os.path.dirname(__file__), "splits", self.opt.split, "{}_files.txt")
+
+        fpath = os.path.join(split_directory, "{}_files.txt")
 
         train_filenames = readlines(fpath.format("train"))
         val_filenames = readlines(fpath.format("val"))
@@ -211,6 +226,8 @@ class Trainer:
             if (self.epoch + 1) % self.opt.save_frequency == 0:
                 self.save_model()
 
+        # save_folder = os.path.join(self.log_path, "models", "weights_{}".format(self.epoch))
+
     def run_epoch(self):
         """Run a single epoch of training and validation
         """
@@ -218,12 +235,15 @@ class Trainer:
 
         print("Training")
         self.set_train()
+        print("set_train()")
 
         for batch_idx, inputs in enumerate(self.train_loader):
 
             before_op_time = time.time()
 
+            print("start process_batch()")
             outputs, losses = self.process_batch(inputs)
+            print("done process_batch()")
 
             self.model_optimizer.zero_grad()
             losses["loss"].backward()
@@ -235,6 +255,11 @@ class Trainer:
             early_phase = batch_idx % self.opt.log_frequency == 0 and self.step < 2000
             late_phase = self.step % 2000 == 0
 
+            middle_phase = self.step % 250 == 0
+
+            
+            self.temp_loss_values.append(losses["loss"].item())
+
             if early_phase or late_phase:
                 self.log_time(batch_idx, duration, losses["loss"].cpu().data)
 
@@ -242,42 +267,85 @@ class Trainer:
                     self.compute_depth_losses(inputs, outputs, losses)
 
                 self.log("train", inputs, outputs, losses)
+                # self.val() # 여기서 val_loss_values도 저장된다
+
+            if middle_phase:
                 self.val()
+                # print('plot!!')
+                self.loss_values.append(sum(self.temp_loss_values) / len(self.temp_loss_values))    # calculate average
+                self.temp_loss_values = [] # reset temp_loss_values
+
+                self.val_loss_values.append(sum(self.temp_val_loss_values) / len(self.temp_val_loss_values))
+                self.temp_val_loss_values = []
+
+                plt.clf()
+                # print(self.loss_values)
+                plt.title(f'{self.opt.model_name}')
+                plt.plot(self.loss_values, 'b-', label='training loss (avg over 250 steps)')
+                plt.plot(self.val_loss_values, 'r-', label='validation loss (calculated once every 250 steps)')
+                plt.ylabel('loss')
+                plt.xlabel('1 unit = 250 steps')
+                plt.ylim(0.0, 0.20)
+                plt.xlim(left=-0.3)
+                plt.legend(loc="upper right")
+                # plt.xticks(np.arange(0, len(self.loss_values), step=1))
+                plt.xticks(np.linspace(0, len(self.loss_values), min(len(self.loss_values), 7), dtype=int))
+                plt.draw()
+                plt.pause(0.001)
+                # print('plotting...')
+
 
             self.step += 1
 
     def process_batch(self, inputs):
         """Pass a minibatch through the network and generate images and losses
         """
+        print('  inputs')
         for key, ipt in inputs.items():
             inputs[key] = ipt.to(self.device)
 
+        print('  features and outputs')
         if self.opt.pose_model_type == "shared":
+            print('    shared')
             # If we are using a shared encoder for both depth and pose (as advocated
             # in monodepthv1), then all images are fed separately through the depth encoder.
             all_color_aug = torch.cat([inputs[("color_aug", i, 0)] for i in self.opt.frame_ids])
             all_features = self.models["encoder"](all_color_aug)
             all_features = [torch.split(f, self.opt.batch_size) for f in all_features]
-
+            
+            print('    features')
             features = {}
             for i, k in enumerate(self.opt.frame_ids):
                 features[k] = [f[i] for f in all_features]
 
+            print('    outputs')
             outputs = self.models["depth"](features[0])
         else:
+            print('    not shared')
             # Otherwise, we only feed the image with frame_id 0 through the depth encoder
+
+            # Check input shape and dtype
+            print("Input shape:", inputs["color_aug", 0, 0].shape)
+            print("Input dtype:", inputs["color_aug", 0, 0].dtype)
+
+            print('    features')
             features = self.models["encoder"](inputs["color_aug", 0, 0])
+            print('    outputs')
             outputs = self.models["depth"](features)
 
+        print('  predictive_mask')
         if self.opt.predictive_mask:
             outputs["predictive_mask"] = self.models["predictive_mask"](features)
 
+        print('  predict_poses()')
         if self.use_pose_net:
             outputs.update(self.predict_poses(inputs, features))
 
+        print('  generate_images_pred()')
         self.generate_images_pred(inputs, outputs)
         losses = self.compute_losses(inputs, outputs)
 
+        print('  return')
         return outputs, losses
 
     def predict_poses(self, inputs, features):
@@ -351,6 +419,8 @@ class Trainer:
         with torch.no_grad():
             outputs, losses = self.process_batch(inputs)
 
+            self.temp_val_loss_values.append(losses["loss"])
+
             if "depth_gt" in inputs:
                 self.compute_depth_losses(inputs, outputs, losses)
 
@@ -410,6 +480,54 @@ class Trainer:
                 if not self.opt.disable_automasking:
                     outputs[("color_identity", frame_id, scale)] = \
                         inputs[("color", frame_id, source_scale)]
+
+                continue
+
+                #### 
+                # Get the image data you want to display
+                sample_image = outputs[("sample", frame_id, scale)]
+                output_image = outputs[("color", frame_id, scale)]
+                input_image = inputs[("color", frame_id, source_scale)]
+
+                print('sample image shape: ', sample_image.shape) # ?, 128, 416, ?
+                print('output image shape: ', output_image.shape) # 12, 3, 128, 416
+                print('input image shape: ', input_image.shape) # 12, 3, 128, 416
+
+                # Convert image data to numpy array
+                sample_image_np = sample_image.cpu().detach().numpy()[0, :, :, 0]
+                output_image_np = output_image.cpu().detach().numpy()[0, 0, :, :] # Assuming output_image is a PyTorch tensor
+                input_image_np = input_image.cpu().detach().numpy()[0, 0, :, :]
+
+                print('sample image shape: ', sample_image_np.shape) # ?, 128, 416, ?
+                print('output np shape: ', output_image_np.shape) # 12, 3, 128, 416
+                print('input np shape: ', input_image_np.shape) # 12, 3, 128, 416
+                
+                # Display the image
+                #  original image    |  reprojected image ??
+                #  sample            |  loss  image ???
+                
+                img_plt = plt.figure(figsize=(10, 5))
+
+                img_plt.add_subplot(2, 2, 1)  # create
+                plt.imshow(input_image_np)
+                plt.axis('off')  # Turn off axis
+                plt.title('Input Image', fontsize=14)
+
+                img_plt.add_subplot(2, 2, 2)
+                plt.imshow(output_image_np)
+                plt.axis('off')  # Turn off axis
+                plt.title('Output Image', fontsize=14)
+
+                img_plt.add_subplot(2, 2, 3)
+                plt.imshow(sample_image_np)
+                plt.axis('off')  # Turn off axis
+                plt.title('Sample Image', fontsize=14)
+
+                img_plt.tight_layout()
+                plt.show()
+                input()
+
+
 
     def compute_reprojection_loss(self, pred, target):
         """Computes reprojection loss between a batch of predicted and target images
@@ -606,7 +724,8 @@ class Trainer:
     def save_model(self):
         """Save model weights to disk
         """
-        save_folder = os.path.join(self.log_path, "models", "weights_{}".format(self.epoch))
+        model_folder = os.path.join(self.log_path, 'models')
+        save_folder = os.path.join(model_folder, "weights_{}".format(self.epoch))
         if not os.path.exists(save_folder):
             os.makedirs(save_folder)
 
@@ -622,6 +741,39 @@ class Trainer:
 
         save_path = os.path.join(save_folder, "{}.pth".format("adam"))
         torch.save(self.model_optimizer.state_dict(), save_path)
+
+        # save loss graph for each weight save
+        plt.clf()
+        plt.title(f'{self.opt.model_name}')
+        plt.plot(self.loss_values, 'b-', label='training loss (avg over 250 steps)')
+        plt.plot(self.val_loss_values, 'r-', label='validation loss (calculated once every 250 steps)')
+        plt.ylabel('loss')
+        plt.xlabel('1 unit = 250 steps')
+        plt.ylim(0.0, 0.20)
+        plt.xlim(left=-0.3)
+        # plt.xticks(np.arange(0, , step=1))
+        plt.xticks(np.linspace(0, len(self.loss_values), min(len(self.loss_values), 7), dtype=int))
+        plt.legend(loc="upper right")
+
+        plt.savefig(save_folder + '/loss_graph.png')
+
+        # save losses
+        with open(f'{save_folder}/training_losses.txt', 'w') as fp:
+            for loss in self.loss_values:
+                fp.write(str(loss))
+                fp.write('\n')
+        with open(f'{save_folder}/val_losses.txt', 'w') as fp:
+            for loss in self.val_loss_values:
+                fp.write(str(loss.item()))
+                fp.write('\n')
+
+        # save test image
+        test_image_path = 'assets/test_image.jpg'
+        model = f'weights_{self.epoch}'
+        model_path = model_folder
+        os.system(f'python test_simple.py --image_path {test_image_path} --out {save_folder} --model_name {model} --model_path {model_path}')
+
+
 
     def load_model(self):
         """Load model(s) from disk

@@ -55,6 +55,7 @@ class MonoDataset(data.Dataset):
         self.width = width
         self.num_scales = num_scales
         self.interp = Image.ANTIALIAS
+        # self.interp = Image.LANCZOS # use this for pillow > 10.0.0
 
         self.frame_idxs = frame_idxs
 
@@ -172,11 +173,27 @@ class MonoDataset(data.Dataset):
             inputs[("K", scale)] = torch.from_numpy(K)
             inputs[("inv_K", scale)] = torch.from_numpy(inv_K)
 
+        # if do_color_aug:
+        #     color_aug = transforms.ColorJitter.get_params(
+        #         self.brightness, self.contrast, self.saturation, self.hue)
+        # else:
+        #     color_aug = (lambda x: x)
+
+        # https://chatgpt.com/share/e35d46df-904d-4541-9fda-dc06a8042d11
         if do_color_aug:
-            color_aug = transforms.ColorJitter.get_params(
-                self.brightness, self.contrast, self.saturation, self.hue)
+            color_jitter = transforms.ColorJitter(
+                brightness=self.brightness, 
+                contrast=self.contrast, 
+                saturation=self.saturation, 
+                hue=self.hue
+            )
+            color_aug = transforms.Compose([
+                color_jitter,
+            ])
         else:
-            color_aug = (lambda x: x)
+            # color_aug = transforms.ToTensor()
+            color_aug = transforms.Compose([])
+            
 
         self.preprocess(inputs, color_aug)
 

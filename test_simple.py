@@ -37,7 +37,8 @@ def resize_with_black_padding(img, expected_size):
     return ImageOps.expand(img, padding)
 
 def resize_with_horizontal_reflective_padding(img, pad_size):
-    padded = np.pad(img, pad_width=((0, 0), (pad_size,pad_size), (0, 0)), mode='symmetric')
+    print('pad_size:', pad_size)
+    padded = np.pad(img, pad_width=((0, 0), (pad_size, pad_size), (0, 0)), mode='symmetric')
     data = im.fromarray(padded)
     return data
 
@@ -71,8 +72,10 @@ def parse_args():
                         help='if set, predicts metric depth instead of disparity. (This only '
                              'makes sense for stereo-trained KITTI models).',
                         action='store_true')
-    parser.add_argument('--reflective', type=bool,
+    parser.add_argument('--reflective', action='store_true',
                         help='using reflective padding')
+
+    parser.add_argument('--model_path', type=str, help='path to load model from', default=None)
 
     return parser.parse_args()
 
@@ -84,7 +87,7 @@ def test_simple(args):
         "You must specify the --model_name parameter; see README.md for an example"
 
     if torch.cuda.is_available() and not args.no_cuda:
-        device = torch.device("cuda:1")
+        device = torch.device("cuda:2")
         print("cuda is used")
     else:
         device = torch.device("cpu")
@@ -94,8 +97,13 @@ def test_simple(args):
         print("Warning: The --pred_metric_depth flag only makes sense for stereo-trained KITTI "
               "models. For mono-trained models, output depths will not in metric space.")
 
-    download_model_if_doesnt_exist(args.model_name)
-    model_path = os.path.join("models", args.model_name)
+
+    if args.model_path == None:
+        download_model_if_doesnt_exist(args.model_name)
+        model_path = os.path.join("models", args.model_name)
+    else:
+        model_path = os.path.join(args.model_path, args.model_name)
+        
     print("-> Loading model from ", model_path)
     encoder_path = os.path.join(model_path, "encoder.pth")
     depth_decoder_path = os.path.join(model_path, "depth.pth")
@@ -157,10 +165,21 @@ def test_simple(args):
             original_width, original_height = input_image.size
             resized_width = int(original_width * feed_height / original_height)
             if args.reflective:
-                input_image = input_image.resize((resized_width, feed_height), pil.LANCZOS)
-                input_image = resize_with_horizontal_reflective_padding(input_image, int((feed_width-resized_width)/2.0))
+                pad_size = int((feed_width-resized_width)/2.0)
+                if pad_size >= 0:
+                    input_image = input_image.resize((resized_width, feed_height), pil.LANCZOS)
+                    input_image = resize_with_horizontal_reflective_padding(input_image, pad_size)
+                else:
+                    input_image = input_image.resize((feed_width, feed_height), pil.LANCZOS)
             else:
                 input_image = input_image.resize((feed_width, feed_height), pil.LANCZOS)
+            
+            # import cv2
+            # cv2.imshow("test", input_image).wait_key(0)
+            # input_image.show() 
+                
+            # use this to display 
+            
             input_image = transforms.ToTensor()(input_image).unsqueeze(0)
 
             # PREDICTION

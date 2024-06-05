@@ -62,11 +62,12 @@ def parse_args():
 
     parser.add_argument('--model_name', type=str,
                         help='name of a pretrained model to use')
-    parser.add_argument('--reflective', type=bool,
+    parser.add_argument('--reflective', action='store_true',
                         help='using reflective padding')
     parser.add_argument('--file_name', type=str,
                         help='using reflective padding')
     parser.add_argument('--assets_path', type=str, help='path to assets folder', default=assets_path)
+    parser.add_argument('--no_video', action='store_false', help='')
 
     return parser.parse_args()
 
@@ -90,16 +91,20 @@ def test(args):
 
     model_paths = [depth_path, depth_video_path, comparison_video_path, pose_path, log_path]
 
-    # check if given video file exists in "assets/original_video"
-    if not os.path.isfile(os.path.join(original_video_path, file_name)):
-        print(f"--file_name {file_name}\nNo such file in the {original_video_path}")
-        exit()
+
+    if args.no_video == True:
+        print(args.no_video)
+        # check if given video file exists in "assets/original_video"
+        if not os.path.isfile(os.path.join(original_video_path, file_name)):
+            print(f"--file_name {file_name}\nNo such file in the {original_video_path}")
+            exit()
 
     base_name = os.path.splitext(file_name)[0]
     frames_base = base_name
     if args.reflective:
         base_name = base_name + '_reflective'
     base_paths = [path + f'/{base_name}' for path in model_paths]
+
 
     # Concatenated video file path
     output_file = f'{comparison_video_path}/{base_name}/comp_{base_name}.mp4'
@@ -111,19 +116,21 @@ def test(args):
             # create folders to make a workspace
             command0 = f'mkdir -p {path}'
             os.system(command0)
-        command0 = f'mkdir -p {frames_path}/{frames_base}'
-        os.system(command0)
-        print_message("Create folders (command 0 executed)!")
 
-        # Command 1
-        # split the video into images and place them in the 'frames' folder"
-        # must be "jpg" NOT "jpeg"
-        command1 = f"ffmpeg -i {original_video_path}/{file_name} -qscale:v 2 -start_number 0 {frames_path}/{frames_base}/%010d.jpg"
-        if len(os.listdir(os.path.join(frames_path, frames_base))) == 0:
-            os.system(command1)
-            print_message("Extract frames (command 1 executed)!")
-        else:
-            print_message('skip extracting frames (command 1 skipped)!')
+        if args.no_video == True:
+            command0 = f'mkdir -p {frames_path}/{frames_base}'
+            os.system(command0)
+            print_message("Create folders (command 0 executed)!")
+
+            # Command 1
+            # split the video into images and place them in the 'frames' folder
+            # must be "jpg" NOT "jpeg"
+            command1 = f"ffmpeg -i {original_video_path}/{file_name} -qscale:v 2 -start_number 0 {frames_path}/{frames_base}/%010d.jpg"
+            if len(os.listdir(os.path.join(frames_path, frames_base))) == 0:
+                os.system(command1)
+                print_message("Extract frames (command 1 executed)!")
+            else:
+                print_message('skip extracting frames (command 1 skipped)!')
     else:
         print_message('skip creating folders (command 0 skipped)!')
         print_message('skip extracting frames (command 1 skipped)!')
@@ -183,7 +190,7 @@ def test(args):
 
     # Command 5
     # evaluate pose
-    # split file
+    # split fileoutput_file
     # ... 
 
     # need to create split file before doing this

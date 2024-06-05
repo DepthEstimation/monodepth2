@@ -27,6 +27,7 @@ class MonodepthOptions:
                                  default=os.path.join(os.path.expanduser("~"), "tmp"))
 
         # TRAINING options
+        self.parser.add_argument("--cuda", type=str, help="graphics card number to use", default="0")
         self.parser.add_argument("--model_name",
                                  type=str,
                                  help="the name of the folder to save the model in",
@@ -34,7 +35,7 @@ class MonodepthOptions:
         self.parser.add_argument("--split",
                                  type=str,
                                  help="which training split to use",
-                                 choices=["eigen_zhou", "eigen_full", "odom", "benchmark", "my"],
+                              #    choices=["eigen_zhou", "eigen_full", "odom", "benchmark", "aihub88_split_1", "boreas_split_1", "kitti_campus", "kitti_resize", "aihub88_resize"],
                                  default="eigen_zhou")
         self.parser.add_argument("--num_layers",
                                  type=int,
@@ -44,8 +45,8 @@ class MonodepthOptions:
         self.parser.add_argument("--dataset",
                                  type=str,
                                  help="dataset to train on",
-                                 default="kitti",
-                                 choices=["kitti", "kitti_odom", "kitti_depth", "kitti_test", "my"])
+                                 default="kitti")
+                              #    choices=["kitti", "kitti_odom", "kitti_depth", "kitti_campus", "aihub88", "boreas", "kitti_resize", "aihub88_resize"])
         self.parser.add_argument("--png",
                                  help="if set, trains from raw KITTI png files (instead of jpgs)",
                                  action="store_true")
@@ -181,7 +182,7 @@ class MonodepthOptions:
                                  help="optional path to a .npy disparities file to evaluate")
         self.parser.add_argument("--eval_split",
                                  type=str,
-                              #    default="eigen",
+                                 default="eigen",
                               #    choices=[
                                    #  "eigen", "eigen_benchmark", "benchmark", "odom_9", "odom_10", "odom_22"],
                                  help="which split to run eval on")
